@@ -2,9 +2,9 @@ name: Monitoramento de Passagens
 
 on:
   schedule:
-    # 03:00, 09:00, 14:00 e 20:00 (Horário de Brasília UTC-3 -> 06:00, 12:00, 17:00, 23:00 UTC)
+    # 03:00, 09:00, 14:00 e 20:00 (Horário de Brasília UTC-3)
     - cron: '0 6,12,17,23 * * *'
-  workflow_dispatch: # Permite execução manual
+  workflow_dispatch:
 
 jobs:
   run-monitor:
@@ -24,6 +24,10 @@ jobs:
           name: flight-db
           path: .
         continue-on-error: true
+
+      - name: Garantir existência do SQLite
+        run: |
+          python -c "import sqlite3; conn = sqlite3.connect('flight.db'); conn.close()"
 
       - name: Instalar Dependências
         run: |
