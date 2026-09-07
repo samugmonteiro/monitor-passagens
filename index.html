@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Configurador de Trajetos - Monitor de Passagens</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: .25rem; font-weight: bold; }
+    input, button { width: 100%; padding: .5rem; box-sizing: border-box; }
+    button { background-color: #2da44e; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 1rem; }
+    textarea { width: 100%; height: 150px; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h2>Adicionar Trajeto para Monitoramento</h2>
+  <form id="routeForm">
+    <div class="form-group">
+      <label>Origem (IATA):</label>
+      <input type="text" id="origem" placeholder="Ex: GRU" required maxlength="3">
+    </div>
+    <div class="form-group">
+      <label>Destino (IATA):</label>
+      <input type="text" id="destino" placeholder="Ex: JFK" required maxlength="3">
+    </div>
+    <div class="form-group">
+      <label>Data Ida:</label>
+      <input type="date" id="data_ida" required>
+    </div>
+    <div class="form-group">
+      <label>Data Volta:</label>
+      <input type="date" id="data_volta" required>
+    </div>
+    <div class="form-group">
+      <label>Preço Máximo Alvo (R$):</label>
+      <input type="number" id="preco_alvo" placeholder="Ex: 3500" required>
+    </div>
+    <button type="button" onclick="adicionarTrajeto()">Gerar JSON do Trajeto</button>
+  </form>
+
+  <h3>Copie o conteúdo abaixo e salve em 'trajetos.json':</h3>
+  <textarea id="jsonOutput" readonly></textarea>
+
+  <script>
+    let trajetos = [];
+    function adicionarTrajeto() {
+      const trajeto = {
+        id: `${document.getElementById('origem').value.toLowerCase()}-${document.getElementById('destino').value.toLowerCase()}`,
+        origem: document.getElementById('origem').value.toUpperCase(),
+        destino: document.getElementById('destino').value.toUpperCase(),
+        data_ida: document.getElementById('data_ida').value,
+        data_volta: document.getElementById('data_volta').value,
+        preco_alvo: parseFloat(document.getElementById('preco_alvo').value),
+        ativo: true
+      };
+      trajetos.push(trajeto);
+      document.getElementById('jsonOutput').value = JSON.stringify(trajetos, null, 2);
+    }
+  </script>
+</body>
+</html>
