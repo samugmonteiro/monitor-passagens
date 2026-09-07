@@ -26,18 +26,21 @@ jobs:
           import os, json, re
 
           issue_body = '''${{ github.event.issue.body }}'''
+          tipo = re.search(r'TIPO:(.*)', issue_body).group(1).strip()
           origem = re.search(r'ORIGEM:(.*)', issue_body).group(1).strip()
           destino = re.search(r'DESTINO:(.*)', issue_body).group(1).strip()
           ida = re.search(r'IDA:(.*)', issue_body).group(1).strip()
-          volta = re.search(r'VOLTA:(.*)', issue_body).group(1).strip()
+          volta_match = re.search(r'VOLTA:(.*)', issue_body)
+          volta = volta_match.group(1).strip() if volta_match else 'N/A'
           preco = float(re.search(r'PRECO_ALVO:(.*)', issue_body).group(1).strip())
 
           novo_data = [{
-              'id': f'{origem.lower()}-{destino.lower()}',
+              'id': f'{origem.lower()}-{destino.lower()}-{tipo.lower()}',
+              'tipo': tipo,
               'origem': origem,
               'destino': destino,
               'data_ida': ida,
-              'data_volta': volta,
+              'data_volta': volta if tipo == 'IDA_E_VOLTA' else None,
               'preco_alvo': preco,
               'ativo': True
           }]
