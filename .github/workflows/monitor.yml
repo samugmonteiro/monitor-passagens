@@ -2,9 +2,9 @@ name: Monitoramento de Passagens
 
 on:
   schedule:
-    # 03:00, 09:00, 14:00 e 20:00 (Horário de Brasília UTC-3)
+    # 03:00, 09:00, 14:00 e 20:00 (Horário de Brasília UTC-3 -> 06:00, 12:00, 17:00, 23:00 UTC)
     - cron: '0 6,12,17,23 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Permite execução manual pela aba Actions
 
 jobs:
   run-monitor:
@@ -19,13 +19,14 @@ jobs:
           python-version: '3.10'
 
       - name: Restaurar Banco de Dados
+        id: download-db
         uses: actions/download-artifact@v4
         with:
           name: flight-db
           path: .
         continue-on-error: true
 
-      - name: Garantir existência do SQLite
+      - name: Garantir existência do SQLite caso seja a 1ª execução
         run: |
           python -c "import sqlite3; conn = sqlite3.connect('flight.db'); conn.close()"
 
@@ -34,7 +35,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Executar Script
+      - name: Executar Script Principal
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
