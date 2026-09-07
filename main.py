@@ -2,7 +2,7 @@ import json
 import os
 import sqlite3
 import requests
-from scraper import consultar_passagem_ida_e_volta, consultar_passagem_somente_ida
+from google_flights_scraper import consultar_passagem_ida_e_volta, consultar_passagem_somente_ida
 
 DB_NAME = 'flight.db'
 
