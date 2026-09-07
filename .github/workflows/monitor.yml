@@ -1,0 +1,46 @@
+name: Monitoramento de Passagens
+
+on:
+  schedule:
+    # Executa automaticamente todos os dias às 08:00 e às 20:00 UTC (05:00 e 17:00 no Horário de Brasília)
+    - cron: '0 8,20 * * *'
+  workflow_dispatch: # Permite disparar manualmente pela interface do GitHub
+
+jobs:
+  run-monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar ambiente Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Instalar o navegador Chromium (Playwright)
+        run: |
+          playwright install --with-deps chromium
+
+      - name: Executar Script de Monitoramento
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ORIGEM: "GRU"
+          DESTINO: "JFK"
+          DATA_IDA: "2026-11-10"
+          DATA_VOLTA: "2026-11-20"
+          THRESHOLD_PCT: "15.0"
+        run: python main.py
+
+      - name: Salvar histórico do Banco de Dados SQLite
+        uses: actions/upload-artifact@v4
+        with:
+          name: flight-db
+          path: flight_prices.db
