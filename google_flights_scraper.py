@@ -4,22 +4,7 @@ google_flights_scraper.py
 
 Consulta o Google Flights (via scraping com Playwright) para uma rota e
 data(s) informadas, e extrai o menor preço encontrado entre os resultados
-exibidos na página. Não requer nenhuma chave de API — é 100% gratuito,
-mas depende da estrutura HTML do Google Flights, que pode mudar com o
-tempo (se parar de funcionar, veja a seção "Alternativa com fast-flights"
-no final deste arquivo).
-
-Requisitos:
-    pip install playwright
-    playwright install chromium
-
-Uso:
-    python google_flights_scraper.py --origin GRU --destination JFK \
-        --depart-date 2026-11-10 --return-date 2026-11-20
-
-    # Somente ida:
-    python google_flights_scraper.py --origin GRU --destination LIS \
-        --depart-date 2026-12-01
+exibidos na página.
 """
 
 import argparse
@@ -27,6 +12,7 @@ import json
 import re
 import sys
 from datetime import datetime
+from urllib.parse import quote
 
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
@@ -41,7 +27,6 @@ def build_google_flights_url(origin: str, destination: str, depart_date: str, re
     else:
         query = f"voos somente ida de {origin} para {destination} em {depart_fmt}"
 
-    from urllib.parse import quote
     return f"https://www.google.com/travel/flights?q={quote(query)}&hl=pt-BR&curr=BRL"
 
 
@@ -58,7 +43,7 @@ def extract_prices_from_page(page) -> list[float]:
         cleaned = raw.replace(".", "").replace(",", ".")
         try:
             value = float(cleaned)
-            # Filtra valores absurdos (ruído de parsing) fora da faixa plausível de passagens
+            # Filtra valores fora da faixa plausível de passagens
             if 50 <= value <= 100000:
                 prices.append(value)
         except ValueError:
@@ -101,7 +86,7 @@ def search_flights(origin: str, destination: str, depart_date: str, return_date:
             except PlaywrightTimeoutError:
                 pass
 
-            # Pequena espera extra para os resultados assíncronos renderizarem
+            # Pequena espera extra para a renderização assíncrona
             page.wait_for_timeout(3000)
 
             prices = extract_prices_from_page(page)
@@ -110,17 +95,53 @@ def search_flights(origin: str, destination: str, depart_date: str, return_date:
                 result["lowest_price"] = min(prices)
                 result["success"] = True
             else:
-                result["error"] = "Nenhum preço encontrado na página (layout pode ter mudado)."
+                result["error"] = "Nenhum preço encontrado na página."
 
         except PlaywrightTimeoutError:
             result["error"] = "Timeout ao carregar a página do Google Flights."
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             result["error"] = f"Erro inesperado: {exc}"
         finally:
             browser.close()
 
     return result
 
+
+# =====================================================================
+# FUNÇÕES DE INTEGRAÇÃO COM O MAIN.PY
+# =====================================================================
+
+def consultar_passagem_ida_e_volta(origem: str, destino: str, data_ida: str, data_volta: str) -> dict | None:
+    """Função chamada pelo main.py para buscas de Ida e Volta."""
+    res = search_flights(
+        origin=origem,
+        destination=destino,
+        depart_date=data_ida,
+        return_date=data_volta,
+        headless=True
+    )
+    if res and res.get("success") and res.get("lowest_price"):
+        return {"preco_total": res["lowest_price"]}
+    return None
+
+
+def consultar_passagem_somente_ida(origem: str, destino: str, data_ida: str) -> dict | None:
+    """Função chamada pelo main.py para buscas de Somente Ida."""
+    res = search_flights(
+        origin=origem,
+        destination=destino,
+        depart_date=data_ida,
+        return_date=None,
+        headless=True
+    )
+    if res and res.get("success") and res.get("lowest_price"):
+        return {"preco_total": res["lowest_price"]}
+    return None
+
+
+# =====================================================================
+# EXECUÇÃO VIA LINHA DE COMANDO (CLI)
+# =====================================================================
 
 def main():
     parser = argparse.ArgumentParser(description="Consulta o menor preço de voos no Google Flights.")
@@ -141,39 +162,8 @@ def main():
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
-
     sys.exit(0 if result["success"] else 1)
 
 
 if __name__ == "__main__":
     main()
-
-
-# -----------------------------------------------------------------------
-# Alternativa: biblioteca `fast-flights`
-# -----------------------------------------------------------------------
-# A lib fast-flights consulta o Google Flights via requisições diretas
-# (usando o protocolo interno do Google, sem precisar renderizar a página),
-# o que costuma ser mais rápido e um pouco mais estável que o scraping
-# acima. Instalação: pip install fast-flights
-#
-# Exemplo de uso equivalente:
-#
-#   from fast_flights import FlightData, Passengers, get_flights
-#
-#   result = get_flights(
-#       flight_data=[
-#           FlightData(date="2026-11-10", from_airport="GRU", to_airport="JFK"),
-#       ],
-#       trip="one-way",
-#       seat="economy",
-#       passengers=Passengers(adults=1, children=0, infants_in_seat=0, infants_on_lap=0),
-#   )
-#
-#   precos = [f.price for f in result.flights if f.price]
-#   menor_preco = min(precos) if precos else None
-#
-# Observação: assim como o scraping, essa biblioteca é mantida pela
-# comunidade e não é oficial do Google, portanto também pode quebrar
-# se o Google alterar seu backend.
-# -----------------------------------------------------------------------
