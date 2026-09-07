@@ -1,0 +1,20 @@
+[
+  {
+    "id": "gru-jfk-nov",
+    "origem": "GRU",
+    "destino": "JFK",
+    "data_ida": "2026-11-10",
+    "data_volta": "2026-11-20",
+    "preco_alvo": 3500.00,
+    "ativo": true
+  },
+  {
+    "id": "bsb-mia-dez",
+    "origem": "BSB",
+    "destino": "MIA",
+    "data_ida": "2026-12-01",
+    "data_volta": "2026-12-15",
+    "preco_alvo": 4000.00,
+    "ativo": true
+  }
+]
